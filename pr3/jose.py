@@ -83,7 +83,7 @@ def cin_dir(th, a):
 # valores articulares arbitrarios para la cinemática directa inicial
 th           = [0.,     0.,     0., 0.]
 a            = [5.,     5.,     5., 5.]
-joint_type   = [0,       1,      0,0] # 0 = rotatoria, 1 = prismática
+joint_type   = [0,       1,      0, 0] # 0 = rotatoria, 1 = prismática
 upper_limits = [180, 10, 180, 180]
 lower_limits = [-179, 1, -180, -180]
 
