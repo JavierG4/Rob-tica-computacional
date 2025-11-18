@@ -1,4 +1,3 @@
- 
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -83,8 +82,8 @@ def muestra_origenes(O,final=0):
 
 def matriz_T(d,theta,a,alpha):
   # Calcula la matriz T (ángulos de entrada en grados)
-  th=theta*pi/180
-  al=alpha*pi/180
+  th=theta*pi/180;
+  al=alpha*pi/180;
   return [[cos(th), -sin(th)*cos(al),  sin(th)*sin(al), a*cos(th)]
          ,[sin(th),  cos(th)*cos(al), -sin(al)*cos(th), a*sin(th)]
          ,[      0,          sin(al),          cos(al),         d]
@@ -92,78 +91,88 @@ def matriz_T(d,theta,a,alpha):
          ]
 # ******************************************************************************
 
-def main():
-  # Introducción de los valores de las articulaciones
-  nvar=6 # Número de variables
-  if len(sys.argv) != nvar+1:
-    sys.exit('El número de articulaciones no es el correcto ('+str(nvar)+')')
-  p=[float(i) for i in sys.argv[1:nvar+1]]
 
-  # Parámetros D-H:
+# Introducción de los valores de las articulaciones
+nvar=3 # Número de variables
+if len(sys.argv) != nvar+1:
+  sys.exit('El número de articulaciones no es el correcto ('+str(nvar)+')')
+p=[float(i) for i in sys.argv[1:nvar+1]]
+
+
+while True:
+  # Parámetros D-H:                                    
   #        1    2
-  d  = [p[0], 0,  0,5,p[4], -p[4], 0 , 0]
-  th = [0, p[1], 90 +p[2], 90 + p[3], 90,90,0,0]
-  a  = [2, 2, 0,0,1,1,p[5],p[5]]
-  al = [0, 90, 90,90,90,90,0,0 ]
-# Orígenes para cada articulación
+  d  = [p[0], 0, 0,p[2]]
+  th = [0, p[1], 90, 0]
+  a  = [0, 5, 0, 0]
+  al = [0, 90, 90, 0]
+
+  # Orígenes para cada articulación
   o00=[0,0,0,1]
   o11=[0,0,0,1]
   o22=[0,0,0,1]
   o33=[0,0,0,1]
-  o44=[0,0,0,1]
-  o5151=[0,0,0,1]
-  o5252=[0,0,0,1]
-  o6161=[0,0,0,1]
-  o6262=[0,0,0,1]
-
-
+  #o44=[0,0,0,1]
+  #o442=[0,0,0,1]
+  #o44=[0,0,0,1]
+  #o5151=[0,0,0,1]
+  #o6161=[0,0,0,1]
+  #o5252=[0,0,0,1]
+  #o6262= [0,0,0,1]
   # Cálculo matrices transformación
   i = 0 # indice en matrices D-H
   T01=matriz_T(d[i],th[i],a[i],al[i])
-
   i += 1
   T12=matriz_T(d[i],th[i],a[i],al[i])
   T02=np.dot(T01,T12)
-
   i += 1
   T23=matriz_T(d[i],th[i],a[i],al[i])
   T03=np.dot(T02,T23)
-
   i += 1
   T34=matriz_T(d[i],th[i],a[i],al[i])
   T04=np.dot(T03,T34)
-
-  i += 1
-  T451=matriz_T(d[i],th[i],a[i],al[i])
-  T051=np.dot(T04,T451)
-
-  i += 1
-  T452=matriz_T(d[i],th[i],a[i],al[i])
-  T052=np.dot(T04,T452)
-
-  i += 1
-  T5161=matriz_T(d[i],th[i],a[i],al[i])
-  T061=np.dot(T051,T5161)
-
-  i += 1
-  T5262=matriz_T(d[i],th[i],a[i],al[i])
-  T062=np.dot(T052,T5262)
-
+  #i += 1
+  #T45=matriz_T(d[i],th[i],a[i],al[i])
+  #T05=np.dot(T04,T45)
+  #i += 1
+  #T51=matriz_T(d[i],th[i],a[i],al[i])
+  #T051=np.dot(T05,T51)
+ # i += 1
+ # T52=matriz_T(d[i],th[i],a[i],al[i])
+ # T052=np.dot(T05, T52)
+  #i+=1
+  #T5262=matriz_T(d[i],th[i],a[i],al[i])
+  #T062=np.dot(T052, T5262)
   # Transformación de cada articulación
   o10 =np.dot(T01, o11).tolist()
   o20 =np.dot(T02, o22).tolist()
-  o30 =np.dot(T03, o33).tolist()
-  o40 =np.dot(T04, o44).tolist()
-  o510 =np.dot(T051, o5151).tolist()
-  o520 =np.dot(T052, o5252).tolist()
-  o610 =np.dot(T061, o6161).tolist()
-  o620 =np.dot(T062, o6262).tolist()
-
-
+  o30 =np.dot(T04, o33).tolist()
+  #o40 =np.dot(T05, o44).tolist()
+  #o41 = np.dot(T051, o441).tolist()
+  #o42 = np.dot(T052, o442).tolist()
+  #o40 =np.dot(T04, o44).tolist()
+  #o510 =np.dot(T051, o5151).tolist()
+  #o520 =np.dot(T052, o5252).tolist()
+  #o610 =np.dot(T061, o6161).tolist()
+  #o620 = np.dot(T062, o6262).tolist()
+  #e0 = [0, 0, 5, 1]
+  #e1 = [3, 0, 0, 1]
+  #e1 = np.dot(T02, e1).tolist()
+  #ef = [0,1,0, 1]
+  #ef = np.dot(T05, ef).tolist()
+  #ef0 = [0, 0, p[0], 1]
+  #ef41 = [0, 0, p[4], 1]
+  #ef41 = np.dot(T04, ef41).tolist()
+  #ef42 = [0, 0, -p[4], 1]
+  #ef42 = np.dot(T04, ef42).tolist()
   # Mostrar resultado de la cinemática directa
-  listaOrigenes = [o00, o10, o20, o30, o40, [[o510, o610], [o520, o620]]]
-  muestra_origenes(listaOrigenes)
-  muestra_robot   (listaOrigenes)
+  #listaOrigenes = [o00, ef0, o10, o20, o30, o40, [[ef41, o510, o610], [ef42, o520, o620]]]
+  listaOrigenes_articulado = [o00, o10, o20, o30]
+  muestra_origenes(listaOrigenes_articulado)
+  #muestra_robot   (listaOrigenes, ef)
+  muestra_robot   (listaOrigenes_articulado)
+  # Volver a solicitar las variables
+  p = [float(i) for i in(input(f'Introduce nuevas coordenadas ({nvar})')).split()]
 
 
-main()
+
