@@ -54,68 +54,85 @@ def mostrar(objetivos,ideal,trayectoria):
   objT   = np.array(objetivos).T.tolist()
   plt.plot(objT[0],objT[1],'-.o')
   plt.show()
-
   # Dada la lista de los obejtivos del robot ideal y real ver el error medio
 
   # Hacer la rejillar
-def localizacion(balizas, real, ideal, centro, radio, mostrar=False):
-  # Buscar la localización más probable del robot, a partir de su sistema
-  # sensorial, dentro de una región cuadrada de centro "centro" y lado "2*radio".
 
-  # Lectura de los sensores reales
-  real_distances = real.senseDistance(balizas)
-  real_angles = real.senseAngle(balizas) 
 
-  resolucion = 20  # Número de celdas por dimensión
-  paso = (2 * radio) / resolucion
-  
+def localizacion(balizas, real, ideal, centro, radio, mostrar=True):
+  # Hacemos UNA lectura de los sensores reales
+  realDist = real.senseDistance(balizas)
+  realAng  = real.senseAngle(balizas)
+
+  incremento = 0.1
+  mejorError = float('inf')
+  xMejor = centro[0]
+  yMejor = centro[1]
+
   imagen = []
-  max_prob = 0
-  best_pose = None
-  
-  # Crear rejilla de probabilidades
-  for y in np.arange(centro[1] - radio, centro[1] + radio, paso):
+
+  # Bucle FOR-Y
+  y = centro[1] - radio
+  while y <= centro[1] + radio:
     fila = []
-    for x in np.arange(centro[0] - radio, centro[0] + radio, paso):
-      # Calcular probabilidad para esta celda
-      prob = 1.0
-      for i, baliza in enumerate(balizas):
-        dist_esperada = distancia([x, y], baliza)
-        dist_medida = real_distances[i]
-        angle_esperado = atan2(baliza[1] - y, baliza[0] - x)
-        angle_medido = real_angles
-        
-        # Función gaussiana para comparar distancias y ángulos
-        prob *= exp(-((dist_esperada - dist_medida) ** 2) / (2 * 0.1 ** 2))
-        prob *= exp(-((angle_esperado - angle_medido) ** 2) / (2 * 0.1 ** 2))
-      
-      fila.append(prob)
-      
-      if prob > max_prob:
-        max_prob = prob
-        best_pose = [x, y, ideal.orientation]
-    
+
+    # Bucle FOR-X
+    x = centro[0] - radio
+    while x <= centro[0] + radio:
+
+      # Fijar posición ideal para evaluar
+      ideal.set(x, y, ideal.orientation)
+
+      # Medidas desde esa pose ideal
+      idealDist = ideal.senseDistance(balizas)
+      idealAng  = ideal.senseAngle(balizas)
+
+      # Calcular error medio
+      err = 0
+      for i in range(len(balizas)):
+        err += abs(realDist[i] - idealDist[i])
+        err += abs(realAng - idealAng)
+
+      err /= len(balizas)
+
+      fila.append(err)
+
+      # Guardar mejor error
+      if err < mejorError:
+        mejorError = err
+        xMejor = x
+        yMejor = y
+
+      x += incremento
+
     imagen.append(fila)
-  
-  # Actualizar posición ideal con la mejor estimación
-  if best_pose:
-    ideal.set(*best_pose)
-  
+    y += incremento
+
+  # Asignar al ideal la pose del menor error y orientación realAngle
+  ideal.set(xMejor, yMejor, realAng)
+
+  # Mostrar
   if mostrar:
     plt.figure('Localizacion')
     plt.clf()
     plt.ion()
+
     plt.xlim(centro[0]-radio, centro[0]+radio)
     plt.ylim(centro[1]-radio, centro[1]+radio)
-    imagen_invertida = imagen[::-1]
-    plt.imshow(imagen_invertida, extent=[centro[0]-radio, centro[0]+radio,
-                                          centro[1]-radio, centro[1]+radio],
+
+    img_inv = imagen[::-1]
+    plt.imshow(img_inv, extent=[centro[0]-radio, centro[0]+radio,
+                                centro[1]-radio, centro[1]+radio],
                cmap='hot')
+
     balT = np.array(balizas).T.tolist()
     plt.plot(balT[0], balT[1], 'or', ms=10)
-    plt.plot(ideal.x, ideal.y, 'D', c='#ff00ff', ms=10, mew=2)
-    plt.plot(real.x, real.y, 'D', c='#00ff00', ms=10, mew=2)
+    plt.plot(ideal.x, ideal.y, 'Dm', ms=10, mew=2)
+
     plt.show()
+
+
+
 
 
 # ******************************************************************************
@@ -132,10 +149,10 @@ MOSTRAR   = True       # Si se quiere gráficas de localización y trayectorias
 HOLONOMICO = 1
 GIROPARADO = 0
 LONGITUD   = .2
-RADIO = 3
+RADIO = 5
 
 # Definición de trayectorias:
-trayectorias = [
+trayectorias = [  
     [[1,3]],
     [[0,2],[4,2]],
     [[2,4],[4,0],[0,0]],
@@ -171,7 +188,7 @@ random.seed(time.time())
 tic = time.time()
 
 # Localización inicial
-localizacion(objetivos, real, ideal, [2,2], RADIO)
+localizacion(objetivos, real, ideal, [0,0], RADIO)
 
 tray_ideal = [ideal.pose()]  # Trayectoria percibida
 
@@ -198,6 +215,8 @@ for punto in objetivos:
     tray_real.append(real.pose())
 
     # Decidir nueva localización ⇒ nuevo ideal
+    # AL real le pedimos la sense medida y comaparamos ydepende del error lo llamamos y si ese numeor suepra x humbral
+    # Sumar los errores y tener el escalar y defino el humbral
 
     tray_ideal.append(ideal.pose())
 
@@ -218,6 +237,20 @@ print(f"Recorrido: {espacio:.3f}m / {tiempo/FPS}s")
 print(f"Distancia real al objetivo final: {distanciaObjetivos[-1]:.3f}m")
 print(f"Suma de distancias a objetivos: {np.sum(distanciaObjetivos):.3f}m")
 print(f"Tiempo real invertido: {toc-tic:.3f}sg")
+
+desviacion = np.sum(np.abs(np.subtract(tray_real, tray_ideal)))
+print(f"Desviacion de las trayectorias: {desviacion:.3f}")
+
+
 if MOSTRAR:
   mostrar(objetivos, tray_ideal, tray_real)  # Representación gráfica
   input() # Pausa para ver la gráfica
+
+print(f"Resumen: {toc-tic:.3f} {desviacion:.3f} {np.sum(distanciaObjetivos):.3f}")
+
+# Cada cuanto van a relocalizar
+# El robot real puede estar en cualquier punto de [5,-5] y el ideal hay q ponerlo bien
+# No se puede acceder al real, sino al ideal en la relocalizacion y hay que ver cual es el tamaño, 
+# ITene que ser propocional el tmañao de la región al error
+# Segun el cuadrante que nos de mejor nos vamos quedando con ese
+#Poder poner a mano el error como parametro
